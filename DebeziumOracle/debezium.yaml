@@ -1,0 +1,32 @@
+apiVersion: debezium.io/v1alpha1
+kind: DebeziumServer
+metadata:
+  name: debezium-oracle
+  namespace: debezium
+spec:
+  quarkus:
+    config:
+      log.console.json: false
+  sink:
+    type: kafka
+    config:
+      producer.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
+      producer.key.serializer: org.apache.kafka.common.serialization.StringSerializer
+      producer.value.serializer: org.apache.kafka.common.serialization.StringSerializer
+  source:
+    class: io.debezium.connector.oracle.OracleConnector
+    config:
+      database.hostname: oracle-xe
+      database.port: "1521"
+      database.user: c##dbzuser
+      database.password: dbz
+      database.dbname: XE
+      database.pdb.name: XEPDB1
+      topic.prefix: oracle-server
+      # Schema history is required for relational databases
+      schema.history.internal.kafka.bootstrap.servers: 'my-cluster-kafka-bootstrap:9092'
+      schema.history.internal.kafka.topic: schema-changes.inventory
+      database.connection.adapter: logminer
+      # Matches all tables in APP_USER schema
+      table.include.list: APP_USER\..* ```
+

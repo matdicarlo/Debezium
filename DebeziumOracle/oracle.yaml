@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oracle-init-scripts
+  namespace: debezium
+data:
+  01_setup_cdc.sql: |
+    -- 1. Enable Archivelog Mode (handled by your ENV var, but good to check)
+    -- 2. Supplemental logging
+    ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
+    ALTER DATABASE ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+    
+    -- 3. Create Debezium User in CDB
+    CREATE USER c##dbzuser IDENTIFIED BY dbz DEFAULT TABLESPACE USERS QUOTA UNLIMITED ON USERS;
+    GRANT CONNECT, RESOURCE, SELECT ANY TABLE, SELECT ANY DICTIONARY TO c##dbzuser;
+    GRANT CREATE SESSION, EXECUTE_CATALOG_ROLE, SELECT ANY TRANSACTION TO c##dbzuser;
+    GRANT LOGMINING TO c##dbzuser;
+    GRANT EXECUTE ON DBMS_LOGMNR TO c##dbzuser;
+    GRANT EXECUTE ON DBMS_LOGMNR_D TO c##dbzuser;
+    
+    -- 4. REQUIRED: Grant permissions on specific LogMiner views
+    GRANT SELECT ON V_$LOGMNR_CONTENTS TO c##dbzuser;
+    GRANT SELECT ON V_$LOGMNR_LOGS TO c##dbzuser;
+    GRANT SELECT ON V_$LOGMNR_DICTIONARY TO c##dbzuser;
+    GRANT SELECT ON V_$LOGMNR_PARAMETERS TO c##dbzuser;
+    GRANT SELECT ON V_$LOGMNR_STATS TO c##dbzuser;
+    GRANT SELECT ON V_$LOG TO c##dbzuser;
+    GRANT SELECT ON V_$LOGFILE TO c##dbzuser;
+    GRANT SELECT ON V_$ARCHIVED_LOG TO c##dbzuser;
+    GRANT SELECT ON V_$DATABASE TO c##dbzuser;
+    
+    -- 5. Create a dummy table so Debezium has something to see
+    CREATE TABLE APP_USER.CUSTOMERS (id NUMBER(10) PRIMARY KEY, name VARCHAR2(50));
+    INSERT INTO APP_USER.CUSTOMERS (id, name) VALUES (1, 'Initial Data');
+    COMMIT;
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oracle-data
+  namespace: debezium
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oracle-xe
+  namespace: debezium
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oracle-xe
+  template:
+    metadata:
+      labels:
+        app: oracle-xe
+    spec:
+      # Use the Oracle user and group IDs
+      securityContext:
+        fsGroup: 54321
+        runAsUser: 54321
+      # This initContainer fixes the "Permission Denied" error on the PVC
+      initContainers:
+        - name: fix-permissions
+          image: busybox
+          command: ["sh", "-c", "chown -R 54321:54321 /opt/oracle/oradata"]
+          securityContext:
+            runAsUser: 0 # Run as root specifically to change ownership
+          volumeMounts:
+            - name: oracle-data
+              mountPath: /opt/oracle/oradata
+      containers:
+        - name: oracle-xe
+          image: gvenzl/oracle-xe:21-slim
+          ports:
+            - containerPort: 1521
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+          env:
+            - name: ORACLE_PASSWORD
+              value: "oracle"
+            - name: APP_USER
+              value: "APP_USER"
+            - name: APP_USER_PASSWORD
+              value: "password"
+            - name: ENABLE_ARCHIVELOG
+              value: "true"
+            - name: ORACLE_ENABLE_XDB
+              value: "true"
+          volumeMounts:
+            - mountPath: /opt/oracle/oradata
+              name: oracle-data
+            - name: oracle-init-scripts
+              mountPath: /container-entrypoint-initdb.d
+      volumes:
+        - name: oracle-data
+          persistentVolumeClaim:
+            claimName: oracle-data
+        - name: oracle-init-scripts
+          configMap:
+            name: oracle-init-scripts
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oracle-xe
+  namespace: debezium
+spec:
+  ports:
+    - port: 1521
+      targetPort: 1521
+  selector:
+    app: oracle-xe
