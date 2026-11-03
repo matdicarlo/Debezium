@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oracle-xe
+  namespace: streams
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oracle-xe
+  template:
+    metadata:
+      labels:
+        app: oracle-xe
+    spec:
+      securityContext:
+        fsGroup: 54321
+      initContainers:
+        - name: fix-permissions
+          image: busybox
+          command: ["sh", "-c", "chown -R 54321:54321 /opt/oracle/oradata"]
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: oracle-data
+              mountPath: /opt/oracle/oradata
+      containers:
+        - name: oracle-xe
+          image: gvenzl/oracle-xe:21-slim
+          ports:
+            - containerPort: 1521
+          resources:
+            requests:
+              memory: "4Gi" # Increased
+              cpu: "1"
+            limits:
+              memory: "8Gi" # Increased
+              cpu: "2"
+          env:
+            - name: ORACLE_PASSWORD
+              value: "oracle"
+            - name: APP_USER
+              value: "APP_USER"
+            - name: APP_USER_PASSWORD
+              value: "password"
+            - name: ENABLE_ARCHIVELOG
+              value: "true"
+            - name: ORACLE_ENABLE_XDB
+              value: "true"
+          volumeMounts:
+            - mountPath: /opt/oracle/oradata
+              name: oracle-data
+            - name: oracle-init-scripts
+              mountPath: /container-entrypoint-initdb.d
+      volumes:
+        - name: oracle-data
+          persistentVolumeClaim:
+            claimName: oracle-data
+        - name: oracle-init-scripts
+          configMap:
+            name: oracle-init-scripts
