@@ -1,0 +1,24 @@
+kind: KafkaConnector
+apiVersion: kafka.strimzi.io/v1
+metadata:
+  name: oracle-source-connector
+  labels:
+    strimzi.io/cluster: my-connect-cluster
+  namespace: streams
+spec:
+  class: io.debezium.connector.oracle.OracleConnector
+  tasksMax: 1
+  config:
+    database.hostname: oracle-xe
+    database.port: "1521"
+    database.user: "c##dbzuser"
+    database.password: "dbz"
+    database.dbname: "XE"
+    database.pdb.name: "XEPDB1"
+    topic.prefix: "oracle_cdc"
+    schema.history.internal.kafka.bootstrap.servers: "kafka-cluster-kafka-bootstrap:9092"
+    schema.history.internal.kafka.topic: "schema-changes.oracle"
+    database.connection.adapter: "logminer"
+    table.include.list: "APP_USER.CUSTOMERS"
+    notification.enabled.channels: "sink"
+    notification.sink.topic.name: "debezium_notifications"

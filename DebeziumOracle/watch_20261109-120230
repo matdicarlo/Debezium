@@ -1,0 +1,43 @@
+Warning: apps.openshift.io/v1 DeploymentConfig is deprecated in v4.14+, unavailable no sooner than v6.0+                                    
+NAME                                                READY   STATUS      RESTARTS   AGE                                                      
+pod/kafka-cluster-entity-operator-94df54587-h8s7g   2/2     Running     0          22m                                                      
+pod/kafka-cluster-my-pool-0                         1/1     Running     0          24m                                                      
+pod/kafka-cluster-my-pool-1                         1/1     Running     0          24m                                                      
+pod/kafka-cluster-my-pool-2                         1/1     Running     0          24m                                                      
+pod/kafka-cluster-my-poolc-3                        1/1     Running     0          24m                                                      
+pod/kafka-cluster-my-poolc-4                        1/1     Running     0          24m                                                      
+pod/kafka-cluster-my-poolc-5                        1/1     Running     0          24m                                                      
+pod/my-connect-cluster-connect-0                    1/1     Running     0          5m50s                                                    
+pod/my-connect-cluster-connect-build-1-build        0/1     Completed   0          6m57s                                                    
+pod/oracle-xe-5f47cddb54-slq2j                      0/1     Pending     0          16s                                                      
+                                                                                                                                            
+NAME                                     TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                                        AGE      
+service/kafka-cluster-kafka-bootstrap    ClusterIP   172.30.86.70     <none>        9091/TCP,9092/TCP,9093/TCP                     24m      
+service/kafka-cluster-kafka-brokers      ClusterIP   None             <none>        9090/TCP,9091/TCP,8443/TCP,9092/TCP,9093/TCP   24m      
+service/my-connect-cluster-connect       ClusterIP   None             <none>        8083/TCP                                       5m50s    
+service/my-connect-cluster-connect-api   ClusterIP   172.30.151.105   <none>        8083/TCP                                       5m50s    
+                                                                                                                                            
+NAME                                            READY   UP-TO-DATE   AVAILABLE   AGE                                                        
+deployment.apps/kafka-cluster-entity-operator   1/1     1            1           22m                                                        
+deployment.apps/oracle-xe                       0/1     1            0           37m                                                        
+                                                                                                                                            
+NAME                                                      DESIRED   CURRENT   READY   AGE                                                   
+replicaset.apps/kafka-cluster-entity-operator-94df54587   1         1         1       22m                                                   
+replicaset.apps/oracle-xe-5f47cddb54                      1         1         0       16s                                                   
+replicaset.apps/oracle-xe-74fcb978f9                      1         0         0       37m                                                   
+                                                                                                                                            
+NAME                                                              TYPE     FROM         LATEST                                              
+buildconfig.build.openshift.io/my-connect-cluster-connect-build   Docker   Dockerfile   1                                                   
+                                                                                                                                            
+NAME                                                          TYPE     FROM         STATUS     STARTED         DURATION                     
+build.build.openshift.io/my-connect-cluster-connect-build-1   Docker   Dockerfile   Complete   6 minutes ago   1m7s                         
+                                                                                                                                            
+NAME                                                     IMAGE REPOSITORY                                                                   
+TAGS     UPDATED                                                                                                                            
+imagestream.image.openshift.io/my-connect-with-plugins   image-registry.openshift-image-registry.svc:5000/streams/my-connect-with-plugins   
+latest   5 minutes ago                                                                                                                      
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            
+                                                                                                                                            

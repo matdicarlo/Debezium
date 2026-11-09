@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oracle-init-scripts
+  namespace: streams
+data:
+  setup.sql: |
+    -- Basic setup for Debezium Oracle test
+    CREATE USER APP_USER IDENTIFIED BY password;
+    GRANT CONNECT, RESOURCE, DBA TO APP_USER;
+    ALTER USER APP_USER QUOTA UNLIMITED ON USERS;
+    CREATE TABLE APP_USER.CUSTOMERS (id NUMBER PRIMARY KEY, name VARCHAR2(100));
+
+    -- Create Debezium User
+    CREATE USER c##dbzuser IDENTIFIED BY dbz;
+    GRANT CREATE SESSION TO c##dbzuser;
+    GRANT CONNECT, RESOURCE, DBA TO c##dbzuser;
